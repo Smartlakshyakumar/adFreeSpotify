@@ -1,0 +1,65 @@
+import re
+import time
+import urllib.request
+import spotipy
+from pytube import YouTube
+from spotipy.oauth2 import SpotifyClientCredentials
+import os
+
+CLIENT_ID = "fb678d0c376249afac167ee1e0c46d73"
+CLIENT_SECRET = "0c5da770ed1e4d9bad0885cc9eb06ee0"
+songList = []
+downloadFolder = "C:/Users/LAKSHYA KUMAR/PycharmProjects/pythonProject/songDownloads"
+i = 0
+
+playlist_link = input()
+a = playlist_link.replace("https://open.spotify.com/playlist/", "")
+URI, c = a.split("?")
+
+client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+session = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+tracks = session.playlist_tracks(URI)["items"]
+
+for track in tracks:
+    songName = track["track"]["name"]
+    artistName = ", ".join([artist["name"] for artist in track["track"]["artists"]])
+    songInfo = str(songName + " - " + artistName)
+    songList.append(songInfo)
+
+
+def scrapeYt(query):
+    userQuery = query.replace(" ", "+")
+    baseLink = "https://www.youtube.com/results?search_query="
+    queryStuff = baseLink + userQuery
+
+    queryBytesLink = bytes(queryStuff, 'utf-8')
+    queryLink = str(queryBytesLink).replace("\\", "%5C")
+    queryLink = queryLink[2:][:-1]
+
+    html = urllib.request.urlopen(queryLink)
+    video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
+    final_link = str("https://youtu.be/" + video_ids[0])
+
+    return final_link
+
+
+def downloadVideo(URL, fileSongName):
+    print(URL)
+    name = str(fileSongName) + ".mp3"
+    yt = YouTube(URL)
+    audio_stream = yt.streams.filter(only_audio=True).first()
+    audio_stream.download(output_path=downloadFolder, filename=name)
+
+
+for item in songList:
+    search = scrapeYt(item)
+    songFileName = str(songList[i])
+    downloadVideo(search, songFileName)
+    print("Downloaded  " + songFileName)
+    i += 1
+
+print("Program executed successfully")
+
+
+
